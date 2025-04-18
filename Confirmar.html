@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Confirmar Tarefa - Insidex</title>
+  <style>
+    body {
+      background-color: #0d0d0d;
+      color: #fff;
+      font-family: 'Arial', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .card {
+      background-color: #1a1a1a;
+      padding: 30px;
+      border-radius: 16px;
+      text-align: center;
+      box-shadow: 0 0 25px rgba(0, 255, 183, 0.3);
+    }
+
+    .botao-confirmar {
+      background-color: #00ffb7;
+      color: #000;
+      font-weight: bold;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 30px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-top: 20px;
+    }
+
+    .botao-confirmar:disabled {
+      background-color: #555;
+      cursor: not-allowed;
+    }
+
+    h1 {
+      font-size: 24px;
+      margin-bottom: 10px;
+      color: #00ffb7;
+    }
+
+    p {
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Confirmar Tarefa</h1>
+    <p>Clique abaixo para confirmar a tarefa e atualizar seu saldo.</p>
+    <button id="btnConfirmar" class="botao-confirmar">Confirmar Tarefa</button>
+  </div>
+
+  <script>
+    const btn = document.getElementById("btnConfirmar");
+
+    btn.addEventListener("click", () => {
+      const valorTarefa = 0.007;
+
+      let saldo = parseFloat(localStorage.getItem("saldoInsidex")) || 0;
+      saldo += valorTarefa;
+      localStorage.setItem("saldoInsidex", saldo.toFixed(3));
+
+      // Histórico
+      const historico = JSON.parse(localStorage.getItem("historicoInsidex")) || [];
+      const data = new Date().toLocaleString();
+      historico.unshift(`Tarefa confirmada em ${data}`);
+      localStorage.setItem("historicoInsidex", JSON.stringify(historico));
+
+      // Gráfico
+      const grafico = JSON.parse(localStorage.getItem("graficoTarefas")) || [0];
+      const ultimo = grafico[grafico.length - 1] || 0;
+      grafico.push(ultimo + 1);
+      localStorage.setItem("graficoTarefas", JSON.stringify(grafico));
+
+      btn.textContent = "Tarefa Confirmada!";
+      btn.disabled = true;
+
+      setTimeout(() => {
+        window.location.href = "index.html";
+      }, 1500);
+    });
+  </script>
+</body>
+</html>
