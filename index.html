@@ -104,7 +104,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
     import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -117,16 +117,17 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
+    const auth = getAuth();
     const db = getFirestore(app);
+
+    let userId = "";
+    let saldo = 0;
+    let tarefasPorDia = [];
+    let historicoSalvo = [];
 
     const saldoDisplay = document.getElementById("saldoDisplay");
     const historico = document.getElementById("historicoTarefas");
     const ctx = document.getElementById("grafico").getContext("2d");
-
-    let saldo = 0;
-    let tarefasPorDia = [];
-    let historicoSalvo = [];
 
     const chart = new Chart(ctx, {
       type: 'line',
@@ -144,8 +145,13 @@
       options: {
         responsive: true,
         scales: {
-          y: { ticks: { color: '#fff' }, beginAtZero: true },
-          x: { ticks: { color: '#fff' } }
+          y: {
+            ticks: { color: '#fff' },
+            beginAtZero: true
+          },
+          x: {
+            ticks: { color: '#fff' }
+          }
         },
         plugins: {
           legend: { display: false },
@@ -160,7 +166,7 @@
 
     function atualizarUI() {
       saldoDisplay.textContent = `Saldo: ${saldo.toFixed(3)} Insidex`;
-      chart.data.labels = tarefasPorDia.map((_, i) => i + 1);
+      chart.data.labels = tarefasPorDia.map((_, i) => i);
       chart.data.datasets[0].data = tarefasPorDia;
       chart.update();
 
@@ -196,12 +202,12 @@
       atualizarUI();
     }
 
-    // Verificar se o usuário está logado
     onAuthStateChanged(auth, async (user) => {
       if (user) {
-        await carregarDados(user.uid);
+        userId = user.uid;
+        await carregarDados(userId);
       } else {
-        window.location.href = "index.html"; // redireciona para login
+        window.location.href = "login.html";
       }
     });
   </script>
