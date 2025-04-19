@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Insidex - Login</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div class="container">
+  <h2>Entrar na Insidex</h2>
+  <div id="error-message"></div>
+  <div class="form-group">
+    <input type="email" id="email" placeholder="E-mail" required>
+  </div>
+  <div class="form-group">
+    <input type="password" id="password" placeholder="Senha" required>
+  </div>
+  <button onclick="login()">Entrar</button>
+
+  <div class="form-group" style="margin-top: 15px;">
+    <button id="google-btn" style="background-color: #00ffb7; color: #000;" onclick="loginWithGoogle()">
+      Entrar com Google
+    </button>
+  </div>
+
+  <div class="footer-links">
+    <p>Não tem conta? <a href="Registro.html">Criar conta</a></p>
+    <p><a href="#">Esqueci minha senha</a></p>
+  </div>
+</div>
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+<script src="script.js"></script>
+
+</body>
+</html>
