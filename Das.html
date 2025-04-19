@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Insidex - Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      background-color: #0d0d0d;
+      color: #fff;
+      font-family: 'Arial', sans-serif;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+    }
+    .container {
+      width: 100%;
+      max-width: 600px;
+    }
+    .card {
+      background-color: #1a1a1a;
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 0 25px rgba(0, 255, 183, 0.3);
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .titulo {
+      font-size: 28px;
+      font-weight: bold;
+      color: #00ffb7;
+      margin-bottom: 20px;
+      text-shadow: 0 0 10px #00ffb7;
+    }
+    .botao-tarefa {
+      display: inline-block;
+      background: #00ffb7;
+      color: #000;
+      padding: 12px 24px;
+      border-radius: 30px;
+      text-decoration: none;
+      font-weight: bold;
+      transition: background 0.3s, box-shadow 0.3s;
+      margin-bottom: 20px;
+    }
+    .botao-tarefa:hover {
+      background: #00cc99;
+      box-shadow: 0 0 15px #00ffb7;
+    }
+    h2 {
+      font-size: 20px;
+      margin-bottom: 10px;
+    }
+    .main-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #00ffb7;
+      margin-bottom: 10px;
+    }
+    canvas {
+      margin-top: 20px;
+    }
+    .historico {
+      max-height: 150px;
+      overflow-y: auto;
+      padding: 10px;
+      border-top: 1px solid #00ffb7;
+    }
+    .historico-item {
+      background: #262626;
+      padding: 8px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+    .aviso-tarefa {
+      color: #00ffb7;
+      font-size: 14px;
+      margin-top: -10px;
+      margin-bottom: 20px;
+      text-shadow: 0 0 5px #00ffb7;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="titulo">Insidex</div>
+      <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+        <a href="https://suaads.com/8d0abe" class="botao-tarefa" target="_blank" id="botaoTarefa">Realizar Tarefa</a>
+      </div>
+      <p class="aviso-tarefa">*Complete o captcha e será redirecionado para confirmar sua tarefa.</p>
+      <h2>Cliques realizados</h2>
+      <div class="main-value" id="saldoDisplay">Saldo: 0.000 Insidex</div>
+      <canvas id="grafico" width="400" height="200"></canvas>
+    </div>
+    <div class="card">
+      <h2>Histórico de Tarefas</h2>
+      <div class="historico" id="historicoTarefas"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBxtvz8KqN5knzovcYRHdXxMtcUDhDYI1g",
+      authDomain: "insidexbr.firebaseapp.com",
+      projectId: "insidexbr",
+      storageBucket: "insidexbr.firebasestorage.app",
+      messagingSenderId: "166788819502",
+      appId: "1:166788819502:web:b9d4135d4693a2f5eb8dbf"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
+    const db = getFirestore(app);
+
+    let userId = "";
+    let saldo = 0;
+    let tarefasPorDia = [];
+    let historicoSalvo = [];
+
+    const saldoDisplay = document.getElementById("saldoDisplay");
+    const historico = document.getElementById("historicoTarefas");
+    const ctx = document.getElementById("grafico").getContext("2d");
+
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'Tarefas',
+          data: [],
+          borderColor: '#00ffb7',
+          tension: 0.4,
+          fill: false,
+          pointRadius: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: {
+            ticks: { color: '#fff' },
+            beginAtZero: true
+          },
+          x: {
+            ticks: { color: '#fff' }
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => `${ctx.raw} tarefas`
+            }
+          }
+        }
+      }
+    });
+
+    function atualizarUI() {
+      saldoDisplay.textContent = `Saldo: ${saldo.toFixed(3)} Insidex`;
+      chart.data.labels = tarefasPorDia.map((_, i) => i);
+      chart.data.datasets[0].data = tarefasPorDia;
+      chart.update();
+
+      historico.innerHTML = "";
+      historicoSalvo.slice().reverse().forEach(item => {
+        const el = document.createElement("div");
+        el.className = "historico-item";
+        el.textContent = item;
+        historico.appendChild(el);
+      });
+    }
+
+    async function carregarDados(uid) {
+      const ref = doc(db, "usuarios", uid);
+      const snap = await getDoc(ref);
+
+      if (snap.exists()) {
+        const dados = snap.data();
+        saldo = dados.saldo || 0;
+        tarefasPorDia = dados.grafico || [0];
+        historicoSalvo = dados.historico || [];
+      } else {
+        await setDoc(ref, {
+          saldo: 0,
+          grafico: [0],
+          historico: []
+        });
+        saldo = 0;
+        tarefasPorDia = [0];
+        historicoSalvo = [];
+      }
+
+      atualizarUI();
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        userId = user.uid;
+        await carregarDados(userId);
+      } else {
+        window.location.href = "login.html";
+      }
+    });
+  </script>
+</body>
+</html>
