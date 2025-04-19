@@ -175,5 +175,39 @@
     const historicoSalvo = JSON.parse(localStorage.getItem("historicoInsidex")) || [];
     historicoSalvo.forEach(item => atualizarHistorico(item));
   </script>
+
+  <!-- Firebase com login anônimo -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBxtvz8KqN5knzovcYRHdXxMtcUDhDYI1g",
+      authDomain: "insidexbr.firebaseapp.com",
+      projectId: "insidexbr",
+      storageBucket: "insidexbr.firebasestorage.app",
+      messagingSenderId: "166788819502",
+      appId: "1:166788819502:web:b9d4135d4693a2f5eb8dbf"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
+
+    signInAnonymously(auth)
+      .then(() => {
+        console.log("Usuário anônimo autenticado.");
+      })
+      .catch((error) => {
+        console.error("Erro ao autenticar anonimamente:", error);
+      });
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        const uid = user.uid;
+        localStorage.setItem("userId", uid);
+        console.log("ID do usuário salvo no localStorage:", uid);
+      }
+    });
+  </script>
 </body>
 </html>
