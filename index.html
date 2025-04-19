@@ -94,6 +94,8 @@
       text-shadow: 0 0 5px #00ffb7;
     }
   </style>
+  <!-- Adicione isso no <head> -->
+<script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js" type="module"></script>
 </head>
 <body>
   <div class="container">
@@ -159,55 +161,133 @@
       }
     });
 
-    let saldo = parseFloat(localStorage.getItem("saldoInsidex")) || 0.000;
-    const historico = document.getElementById("historicoTarefas");
-    const saldoDisplay = document.getElementById("saldoDisplay");
+    
+  <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+  import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+  import { getFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
 
-    saldoDisplay.textContent = "Saldo: " + saldo.toFixed(3) + " Insidex";
+  const firebaseConfig = {
+    apiKey: "AIzaSyBxtvz8KqN5knzovcYRHdXxMtcUDhDYI1g",
+    authDomain: "insidexbr.firebaseapp.com",
+    projectId: "insidexbr",
+    storageBucket: "insidexbr.firebasestorage.app",
+    messagingSenderId: "166788819502",
+    appId: "1:166788819502:web:b9d4135d4693a2f5eb8dbf"
+  };
 
-    function atualizarHistorico(texto) {
-      const item = document.createElement("div");
-      item.className = "historico-item";
-      item.textContent = texto;
-      historico.prepend(item);
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth();
+  const db = getFirestore(app);
+
+  let userId = "";
+  let saldo = 0;
+  let tarefasPorDia = [];
+  let historicoSalvo = [];
+
+  const saldoDisplay = document.getElementById("saldoDisplay");
+  const historico = document.getElementById("historicoTarefas");
+  const ctx = document.getElementById("grafico").getContext("2d");
+
+  const chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [{
+        label: 'Tarefas',
+        data: [],
+        borderColor: '#00ffb7',
+        tension: 0.4,
+        fill: false,
+        pointRadius: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: {
+          ticks: { color: '#fff' },
+          beginAtZero: true
+        },
+        x: {
+          ticks: { color: '#fff' }
+        }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.raw} tarefas`
+          }
+        }
+      }
+    }
+  });
+
+  function atualizarUI() {
+    saldoDisplay.textContent = `Saldo: ${saldo.toFixed(3)} Insidex`;
+    chart.data.labels = tarefasPorDia.map((_, i) => i);
+    chart.data.datasets[0].data = tarefasPorDia;
+    chart.update();
+
+    historico.innerHTML = "";
+    historicoSalvo.slice().reverse().forEach(item => {
+      const el = document.createElement("div");
+      el.className = "historico-item";
+      el.textContent = item;
+      historico.appendChild(el);
+    });
+  }
+
+  async function carregarDados(uid) {
+    const ref = doc(db, "usuarios", uid);
+    const snap = await getDoc(ref);
+
+    if (snap.exists()) {
+      const dados = snap.data();
+      saldo = dados.saldo || 0;
+      tarefasPorDia = dados.grafico || [0];
+      historicoSalvo = dados.historico || [];
+    } else {
+      // Cria novo usuário
+      await setDoc(ref, {
+        saldo: 0,
+        grafico: [0],
+        historico: []
+      });
+      saldo = 0;
+      tarefasPorDia = [0];
+      historicoSalvo = [];
     }
 
-    const historicoSalvo = JSON.parse(localStorage.getItem("historicoInsidex")) || [];
-    historicoSalvo.forEach(item => atualizarHistorico(item));
-  </script>
+    atualizarUI();
+  }
 
-  <!-- Firebase com login anônimo -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyBxtvz8KqN5knzovcYRHdXxMtcUDhDYI1g",
-      authDomain: "insidexbr.firebaseapp.com",
-      projectId: "insidexbr",
-      storageBucket: "insidexbr.firebasestorage.app",
-      messagingSenderId: "166788819502",
-      appId: "1:166788819502:web:b9d4135d4693a2f5eb8dbf"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth();
-
-    signInAnonymously(auth)
-      .then(() => {
-        console.log("Usuário anônimo autenticado.");
-      })
-      .catch((error) => {
-        console.error("Erro ao autenticar anonimamente:", error);
-      });
-
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        const uid = user.uid;
-        localStorage.setItem("userId", uid);
-        console.log("ID do usuário salvo no localStorage:", uid);
-      }
+  async function salvarDados() {
+    const ref = doc(db, "usuarios", userId);
+    await updateDoc(ref, {
+      saldo,
+      grafico: tarefasPorDia,
+      historico: historicoSalvo
     });
-  </script>
+  }
+
+  // Autenticar usuário anônimo
+  signInAnonymously(auth)
+    .then(() => {
+      console.log("Usuário anônimo autenticado.");
+    })
+    .catch((error) => {
+      console.error("Erro ao autenticar anonimamente:", error);
+    });
+
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      userId = user.uid;
+      await carregarDados(userId);
+    }
+  });
+
+</script>
 </body>
 </html>
