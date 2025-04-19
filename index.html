@@ -1,5 +1,4 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
+<!DOCTYPE html><html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -34,7 +33,7 @@
       margin-bottom: 20px;
       text-shadow: 0 0 10px #00ffb7;
     }
-    .botao-tarefa {
+    .botao-tarefa, .botao-google {
       display: inline-block;
       background: #00ffb7;
       color: #000;
@@ -44,8 +43,9 @@
       font-weight: bold;
       transition: background 0.3s, box-shadow 0.3s;
       margin-bottom: 20px;
+      cursor: pointer;
     }
-    .botao-tarefa:hover {
+    .botao-tarefa:hover, .botao-google:hover {
       background: #00cc99;
       box-shadow: 0 0 15px #00ffb7;
     }
@@ -88,24 +88,27 @@
   <div class="container">
     <div class="card">
       <div class="titulo">Insidex</div>
-      <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
-        <a href="https://suaads.com/8d0abe" class="botao-tarefa" target="_blank" id="botaoTarefa">Realizar Tarefa</a>
+      <div id="loginSection">
+        <button class="botao-google" id="googleLogin">Entrar com Google</button>
       </div>
-      <p class="aviso-tarefa">*Complete o captcha e será redirecionado para confirmar sua tarefa.</p>
-      <h2>Cliques realizados</h2>
-      <div class="main-value" id="saldoDisplay">Saldo: 0.000 Insidex</div>
-      <canvas id="grafico" width="400" height="200"></canvas>
+      <div id="dashboardSection" style="display: none;">
+        <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+          <a href="https://suaads.com/8d0abe" class="botao-tarefa" target="_blank" id="botaoTarefa">Realizar Tarefa</a>
+        </div>
+        <p class="aviso-tarefa">*Complete o captcha e será redirecionado para confirmar sua tarefa.</p>
+        <h2>Cliques realizados</h2>
+        <div class="main-value" id="saldoDisplay">Saldo: 0.000 Insidex</div>
+        <canvas id="grafico" width="400" height="200"></canvas>
+      </div>
     </div>
     <div class="card">
       <h2>Histórico de Tarefas</h2>
       <div class="historico" id="historicoTarefas"></div>
     </div>
-  </div>
-
-  <script type="module">
+  </div>  <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBxtvz8KqN5knzovcYRHdXxMtcUDhDYI1g",
@@ -119,6 +122,7 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth();
     const db = getFirestore(app);
+    const provider = new GoogleAuthProvider();
 
     let userId = "";
     let saldo = 0;
@@ -128,6 +132,8 @@
     const saldoDisplay = document.getElementById("saldoDisplay");
     const historico = document.getElementById("historicoTarefas");
     const ctx = document.getElementById("grafico").getContext("2d");
+    const loginSection = document.getElementById("loginSection");
+    const dashboardSection = document.getElementById("dashboardSection");
 
     const chart = new Chart(ctx, {
       type: 'line',
@@ -199,16 +205,21 @@
         historicoSalvo = [];
       }
 
+      loginSection.style.display = "none";
+      dashboardSection.style.display = "block";
       atualizarUI();
     }
 
-    signInAnonymously(auth)
-      .then(() => {
-        console.log("Usuário anônimo autenticado.");
-      })
-      .catch((error) => {
-        console.error("Erro ao autenticar anonimamente:", error);
-      });
+    document.getElementById("googleLogin").addEventListener("click", () => {
+      signInWithPopup(auth, provider)
+        .then(result => {
+          userId = result.user.uid;
+          carregarDados(userId);
+        })
+        .catch(error => {
+          console.error("Erro no login com Google:", error);
+        });
+    });
 
     onAuthStateChanged(auth, async (user) => {
       if (user) {
@@ -216,6 +227,5 @@
         await carregarDados(userId);
       }
     });
-  </script>
-</body>
+  </script></body>
 </html>
