@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="pt-BR">
+<!DOCTYPE html>
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -33,7 +34,7 @@
       margin-bottom: 20px;
       text-shadow: 0 0 10px #00ffb7;
     }
-    .botao-tarefa, .botao-google {
+    .botao-tarefa {
       display: inline-block;
       background: #00ffb7;
       color: #000;
@@ -43,9 +44,8 @@
       font-weight: bold;
       transition: background 0.3s, box-shadow 0.3s;
       margin-bottom: 20px;
-      cursor: pointer;
     }
-    .botao-tarefa:hover, .botao-google:hover {
+    .botao-tarefa:hover {
       background: #00cc99;
       box-shadow: 0 0 15px #00ffb7;
     }
@@ -88,26 +88,23 @@
   <div class="container">
     <div class="card">
       <div class="titulo">Insidex</div>
-      <div id="loginSection">
-        <button class="botao-google" id="googleLogin">Entrar com Google</button>
+      <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+        <a href="https://suaads.com/8d0abe" class="botao-tarefa" target="_blank" id="botaoTarefa">Realizar Tarefa</a>
       </div>
-      <div id="dashboardSection" style="display: none;">
-        <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
-          <a href="https://suaads.com/8d0abe" class="botao-tarefa" target="_blank" id="botaoTarefa">Realizar Tarefa</a>
-        </div>
-        <p class="aviso-tarefa">*Complete o captcha e será redirecionado para confirmar sua tarefa.</p>
-        <h2>Cliques realizados</h2>
-        <div class="main-value" id="saldoDisplay">Saldo: 0.000 Insidex</div>
-        <canvas id="grafico" width="400" height="200"></canvas>
-      </div>
+      <p class="aviso-tarefa">*Complete o captcha e será redirecionado para confirmar sua tarefa.</p>
+      <h2>Cliques realizados</h2>
+      <div class="main-value" id="saldoDisplay">Saldo: 0.000 Insidex</div>
+      <canvas id="grafico" width="400" height="200"></canvas>
     </div>
     <div class="card">
       <h2>Histórico de Tarefas</h2>
       <div class="historico" id="historicoTarefas"></div>
     </div>
-  </div>  <script type="module">
+  </div>
+
+  <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
     import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -120,20 +117,16 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    const auth = getAuth();
+    const auth = getAuth(app);
     const db = getFirestore(app);
-    const provider = new GoogleAuthProvider();
-
-    let userId = "";
-    let saldo = 0;
-    let tarefasPorDia = [];
-    let historicoSalvo = [];
 
     const saldoDisplay = document.getElementById("saldoDisplay");
     const historico = document.getElementById("historicoTarefas");
     const ctx = document.getElementById("grafico").getContext("2d");
-    const loginSection = document.getElementById("loginSection");
-    const dashboardSection = document.getElementById("dashboardSection");
+
+    let saldo = 0;
+    let tarefasPorDia = [];
+    let historicoSalvo = [];
 
     const chart = new Chart(ctx, {
       type: 'line',
@@ -151,13 +144,8 @@
       options: {
         responsive: true,
         scales: {
-          y: {
-            ticks: { color: '#fff' },
-            beginAtZero: true
-          },
-          x: {
-            ticks: { color: '#fff' }
-          }
+          y: { ticks: { color: '#fff' }, beginAtZero: true },
+          x: { ticks: { color: '#fff' } }
         },
         plugins: {
           legend: { display: false },
@@ -172,7 +160,7 @@
 
     function atualizarUI() {
       saldoDisplay.textContent = `Saldo: ${saldo.toFixed(3)} Insidex`;
-      chart.data.labels = tarefasPorDia.map((_, i) => i);
+      chart.data.labels = tarefasPorDia.map((_, i) => i + 1);
       chart.data.datasets[0].data = tarefasPorDia;
       chart.update();
 
@@ -205,27 +193,17 @@
         historicoSalvo = [];
       }
 
-      loginSection.style.display = "none";
-      dashboardSection.style.display = "block";
       atualizarUI();
     }
 
-    document.getElementById("googleLogin").addEventListener("click", () => {
-      signInWithPopup(auth, provider)
-        .then(result => {
-          userId = result.user.uid;
-          carregarDados(userId);
-        })
-        .catch(error => {
-          console.error("Erro no login com Google:", error);
-        });
-    });
-
+    // Verificar se o usuário está logado
     onAuthStateChanged(auth, async (user) => {
       if (user) {
-        userId = user.uid;
-        await carregarDados(userId);
+        await carregarDados(user.uid);
+      } else {
+        window.location.href = "index.html"; // redireciona para login
       }
     });
-  </script></body>
+  </script>
+</body>
 </html>
