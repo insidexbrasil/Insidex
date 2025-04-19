@@ -22,7 +22,6 @@
       padding: 25px;
       border-radius: 12px;
       box-shadow: 0 0 12px rgba(255, 255, 255, 0.05);
-      display: none;
     }
     h2 {
       text-align: center;
@@ -74,16 +73,16 @@
     }
   </style>
 </head>
-<body onload="verificarStatusLogin()">
+<body>
 
 <div class="container">
   <h2>Entrar na Insidex</h2>
   <div id="error-message"></div>
   <div class="form-group">
-    <input type="email" placeholder="E-mail" disabled />
+    <input type="email" id="email" placeholder="E-mail" disabled>
   </div>
   <div class="form-group">
-    <input type="password" placeholder="Senha" disabled />
+    <input type="password" id="password" placeholder="Senha" disabled>
   </div>
   <button onclick="login()">Entrar</button>
   <button class="google-btn" onclick="loginComGoogle()">Entrar com Google</button>
@@ -108,19 +107,9 @@
     messagingSenderId: "166788819502",
     appId: "1:166788819502:web:b9d4135d4693a2f5eb8dbf"
   };
-
   firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
-
-  function verificarStatusLogin() {
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        window.location.href = "dashboard.html";
-      } else {
-        document.querySelector(".container").style.display = "block";
-      }
-    });
-  }
+  const db = firebase.firestore();
 
   function login() {
     const errorMsg = document.getElementById("error-message");
@@ -137,6 +126,12 @@
         document.getElementById("error-message").innerText = "Erro no login com Google: " + error.message;
       });
   }
+
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      window.location.href = "dashboard.html";
+    }
+  });
 </script>
 
 </body>
